@@ -6,8 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
+        // Si la tabla clients no existe todavía, saltar esta migración de forma segura
+        if (!Schema::hasTable('clients')) {
+            return;
+        }
+
         Schema::table('clients', function (Blueprint $table) {
             if (!Schema::hasColumn('clients', 'has_tv_box')) $table->boolean('has_tv_box')->default(false);
             if (!Schema::hasColumn('clients', 'tv_box_count')) $table->integer('tv_box_count')->default(0);
@@ -19,11 +27,18 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
+        if (!Schema::hasTable('clients')) {
+            return;
+        }
+
         Schema::table('clients', function (Blueprint $table) {
             $table->dropColumn([
-                'has_tv_box', 'tv_box_count', 'has_android_tv', 
+                'has_tv_box', 'tv_box_count', 'has_android_tv',
                 'android_tv_count', 'has_cameras', 'camera_count', 'has_tv_app'
             ]);
         });
