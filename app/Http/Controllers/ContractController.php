@@ -8,66 +8,36 @@ use Illuminate\Http\Request;
 
 class ContractController extends Controller
 {
-    // 📋 LISTADO Y BÚSQUEDA INSTANTÁNEA DE CONTRATOS
-    public function index(Request $request)
+    public function index()
     {
-        $query = Contract::with('client');
-
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $words = array_filter(explode(' ', $search));
-
-            $query->where(function($q) use ($words) {
-                foreach ($words as $word) {
-                    $q->where(function($sub) use ($word) {
-                        $sub->whereHas('client', function($c) use ($word) {
-                            $c->where('name', 'LIKE', "%{$word}%")
-                              ->orWhere('dni', 'LIKE', "%{$word}%")
-                              ->orWhere('phone', 'LIKE', "%{$word}%");
-                        })
-                        ->orWhere('ip_address', 'LIKE', "%{$word}%")
-                        ->orWhere('pppoe_username', 'LIKE', "%{$word}%")
-                        ->orWhere('plan', 'LIKE', "%{$word}%")
-                        ->orWhere('address', 'LIKE', "%{$word}%");
-                    });
-                }
-            });
-        }
-
-        $perPage = (int) $request->get('per_page', 20);
-        $contracts = $query->latest()->paginate($perPage)->withQueryString();
-
-        // Contadores superiores
-        $totalContracts = Contract::count();
-        $activeContracts = Contract::where('status', 'Habilitado')->count();
-        $cutoffContracts = Contract::where('status', 'Cortado')->count();
-
-        return view('contracts.index', compact('contracts', 'totalContracts', 'activeContracts', 'cutoffContracts', 'perPage'));
+        $contracts = Contract::with('client')->latest()->paginate(20);
+        return view('contracts.index', compact('contracts'));
     }
 
-    // ➕ PANTALLA CREAR CONTRATO
     public function create()
     {
-        $clients = Client::select('id', 'name', 'dni', 'phone', 'address')->orderBy('name', 'asc')->get();
+        $clients = Client::orderBy('name', 'asc')->get();
         return view('contracts.create', compact('clients'));
     }
 
-    // 💾 GUARDAR NUEVO CONTRATO
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'plan'      => 'required|string',
-            'price'     => 'required|numeric',
+            'plan' => 'required|string',
+            'price' => 'required|numeric',
+            'status' => 'nullable|string',
+            'wifi_password' => 'nullable|string',
         ]);
 
-        Contract::create($request->all());
+        Contract::create($validated);
 
-        return redirect()->route('contracts.index')->with('success', '🎉 ¡Contrato creado con éxito!');
+        return redirect()->route('contracts.index')->with('success', 'Contrato creado con éxito.');
     }
 
     public function show(Contract $contract)
     {
+        $contract->load('client');
         return view('contracts.show', compact('contract'));
     }
 
@@ -79,13 +49,22 @@ class ContractController extends Controller
 
     public function update(Request $request, Contract $contract)
     {
-        $contract->update($request->all());
-        return redirect()->route('contracts.index')->with('success', 'Contrato actualizado correctamente.');
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'plan' => 'required|string',
+            'price' => 'required|numeric',
+            'status' => 'nullable|string',
+            'wifi_password' => 'nullable|string',
+        ]);
+
+        $contract->update($validated);
+
+        return redirect()->route('contracts.index')->with('success', 'Contrato actualizado con éxito.');
     }
 
     public function destroy(Contract $contract)
     {
         $contract->delete();
-        return redirect()->route('contracts.index')->with('success', 'Contrato eliminado.');
+        return redirect()->route('contracts.index')->with('success', 'Contrato eliminado con éxito.');
     }
 }
