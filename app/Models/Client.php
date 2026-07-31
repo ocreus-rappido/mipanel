@@ -9,9 +9,20 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+        'mobile_phone',
+        'address',
+        'id_card',
+        'zone',
+        'observations',
+        'tv_services',
+        'cameras',
+        'mobile_equipment',
+    ];
 
-    // Relación con los contratos
     public function contracts()
     {
         return $this->hasMany(Contract::class);
