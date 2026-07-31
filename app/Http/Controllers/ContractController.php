@@ -32,13 +32,13 @@ class ContractController extends Controller
 
         Contract::create($validated);
 
-        return redirect()->route('contracts.index')->with('success', 'Contrato creado con éxito.');
+        return redirect()->route('contracts.index')->with('success', '¡Contrato creado con éxito!');
     }
 
     public function show(Contract $contract)
     {
-        $contract->load('client');
-        return view('contracts.show', compact('contract'));
+        // Al tocar la lupa, redirige a la ficha completa del cliente
+        return redirect()->route('clients.show', $contract->client_id);
     }
 
     public function edit(Contract $contract)
@@ -59,12 +59,12 @@ class ContractController extends Controller
 
         $contract->update($validated);
 
-        return redirect()->route('contracts.index')->with('success', 'Contrato actualizado con éxito.');
+        return redirect()->route('contracts.index')->with('success', '¡Contrato actualizado con éxito!');
     }
 
     public function destroy(Contract $contract)
     {
         $contract->delete();
-        return redirect()->route('contracts.index')->with('success', 'Contrato eliminado con éxito.');
+        return redirect()->route('contracts.index')->with('success', '¡Contrato eliminado con éxito!');
     }
 }
