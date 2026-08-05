@@ -40,6 +40,25 @@
                     <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
                         <span class="text-lg">🚀</span> Planes
                     </a>
+
+                    <!-- MENÚ DESPLEGABLE DE FACTURACIÓN -->
+                    <div x-data="{ openFacturacion: {{ request()->routeIs('billing.*') ? 'true' : 'false' }} }" class="space-y-1 mt-2 border-t border-gray-100 pt-2">
+                        <!-- Botón Principal -->
+                        <button @click="openFacturacion = !openFacturacion" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">💵</span> Facturación
+                            </div>
+                            <svg :class="{'rotate-180': openFacturacion}" class="w-4 h-4 transition-transform text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+
+                        <!-- Submenú de Facturación -->
+                        <div x-show="openFacturacion" x-transition class="pl-11 pr-4 py-1 space-y-1">
+                            <a href="{{ route('billing.parameters.index') }}" class="flex items-center gap-2 block px-3 py-2 text-sm font-semibold rounded-lg transition-colors {{ request()->routeIs('billing.parameters.*') ? 'bg-sky-50 text-sky-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                ⚙️ Parámetros
+                            </a>
+                            <!-- Aquí iremos agregando Emitidas, Pagos, etc. -->
+                        </div>
+                    </div>
                 </nav>
             </aside>
 

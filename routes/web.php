@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\BillingParameterController;
 
 Route::get('/', function () {
     return redirect()->route('clients.index');
@@ -20,7 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Clientes (La búsqueda, exportar e importar van ANTES del resource)
+    // Clientes
     Route::get('/clients/search', [ClientController::class, 'search'])->name('clients.search');
     Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function () {
 
     // Contratos
     Route::resource('contracts', ContractController::class);
+
+    // Facturación - Parámetros (¡Ahora está protegida correctamente!)
+    Route::get('/billing/parameters', [BillingParameterController::class, 'index'])->name('billing.parameters.index');
 });
 
 require __DIR__.'/auth.php';
