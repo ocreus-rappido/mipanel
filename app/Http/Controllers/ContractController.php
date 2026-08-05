@@ -13,7 +13,8 @@ class ContractController extends Controller
      */
     public function index()
     {
-        $contracts = Contract::with('client')->latest()->get();
+        // Paginación activa para ser compatible con $contracts->links()
+        $contracts = Contract::with('client')->latest()->paginate(10);
 
         $totalContracts  = Contract::count();
         $activeContracts = Contract::whereIn('status', ['active', 'habilitado', 'Activo'])->count();
