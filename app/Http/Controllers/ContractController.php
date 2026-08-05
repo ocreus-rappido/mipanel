@@ -15,10 +15,11 @@ class ContractController extends Controller
     {
         $contracts = Contract::with('client')->latest()->get();
 
-        $totalContracts = Contract::count();
+        $totalContracts  = Contract::count();
         $activeContracts = Contract::whereIn('status', ['active', 'habilitado', 'Activo'])->count();
+        $cutoffContracts = Contract::whereIn('status', ['suspended', 'cortado', 'Suspendido', 'Cortado', 'inactive'])->count();
 
-        return view('contracts.index', compact('contracts', 'totalContracts', 'activeContracts'));
+        return view('contracts.index', compact('contracts', 'totalContracts', 'activeContracts', 'cutoffContracts'));
     }
 
     /**
