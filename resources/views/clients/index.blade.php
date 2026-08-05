@@ -1,41 +1,64 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center gap-2">
                 👥 {{ __('Clientes') }}
             </h2>
-            <a href="{{ route('clients.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow text-sm transition">
-                + Crear nuevo Cliente
-            </a>
+            
+            <!-- 🛠️ BOTONES DE ACCIÓN TIPO WISPRO -->
+            <div class="flex flex-wrap items-center gap-2">
+                
+                <!-- Formulario oculto para importar -->
+                <form action="{{ route('clients.import') }}" method="POST" enctype="multipart/form-data" id="import-form" class="hidden">
+                    @csrf
+                    <input type="file" name="file" id="file-upload" accept=".xlsx,.xls,.csv" onchange="document.getElementById('import-form').submit()">
+                </form>
+                
+                <!-- Botón Actualizar desde archivo -->
+                <button type="button" onclick="document.getElementById('file-upload').click()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow text-sm transition flex items-center">
+                    Actualizar desde archivo
+                </button>
+                
+                <!-- Botón Exportar -->
+                <a href="{{ route('clients.export') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow text-sm transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Exportar
+                </a>
+                
+                <!-- Botón Crear nuevo Cliente -->
+                <a href="{{ route('clients.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow text-sm transition">
+                    + Crear nuevo Cliente
+                </a>
+            </div>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <!-- 🔍 BUSCADOR EN TIEMPO REAL CON DESPLEGABLE -->
+            <!-- 🔍 BUSCADOR DUAL (Tabla + Base de Datos) -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative">
-                <div class="relative w-full md:w-1/2">
+                <div class="relative w-full">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                     <input type="text" 
-                           id="global-db-search" 
+                           id="global-search" 
                            autocomplete="off"
-                           class="block w-full p-3 pl-10 text-sm text-gray-900 border border-gray-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
-                           placeholder="Buscar en BD por nombre, cédula, teléfono, IP o serial...">
+                           class="block w-full p-3 pl-10 text-sm text-gray-900 border border-blue-400 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
+                           placeholder="Puedes buscar por: Nombre, Teléfono, Cédula de identidad, IP o Serial...">
                     
                     <!-- Indicador de Carga -->
                     <div id="search-spinner" class="hidden absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
                 </div>
 
-                <!-- 📜 MENÚ DESPLEGABLE DE RESULTADOS -->
-                <div id="search-results-dropdown" class="hidden absolute left-4 right-4 md:right-auto md:w-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                <!-- 📜 MENÚ DESPLEGABLE DE RESULTADOS BD -->
+                <div id="search-results-dropdown" class="hidden absolute left-4 right-4 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-100 max-h-96 overflow-y-auto">
                 </div>
             </div>
 
@@ -87,16 +110,27 @@
         </div>
     </div>
 
-    <!-- ⚡ SCRIPT DE BÚSQUEDA ASÍNCRONA A LA BASE DE DATOS -->
+    <!-- ⚡ SCRIPT DUAL: FILTRO DE TABLA + BÚSQUEDA EN BD -->
     <script>
         let debounceTimer;
-        const searchInput = document.getElementById('global-db-search');
+        const searchInput = document.getElementById('global-search');
         const dropdown = document.getElementById('search-results-dropdown');
         const spinner = document.getElementById('search-spinner');
+        const rows = document.querySelectorAll('.client-row');
 
         searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const searchTerms = query.split(' ').filter(term => term.length > 0);
+            
+            // 1. FILTRAR LA TABLA VISIBLE AL INSTANTE
+            rows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                const matches = searchTerms.every(term => rowText.includes(term));
+                row.style.display = matches ? '' : 'none';
+            });
+
+            // 2. BUSCAR EN TODA LA BASE DE DATOS (Dropdown)
             clearTimeout(debounceTimer);
-            const query = this.value.trim();
 
             if (query.length < 2) {
                 dropdown.classList.add('hidden');
@@ -106,36 +140,30 @@
 
             spinner.classList.remove('hidden');
 
-            // Debounce de 300ms para evitar saturar el servidor al escribir
             debounceTimer = setTimeout(() => {
-                fetch(`{{ route('clients.search') }}?query=${encodeURIComponent(query)}`)
+                fetch(`/clients/search?query=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(clients => {
                         spinner.classList.add('hidden');
                         dropdown.innerHTML = '';
 
                         if (clients.length === 0) {
-                            dropdown.innerHTML = `
-                                <div class="p-4 text-sm text-gray-500 text-center font-medium">
-                                    No se encontraron coincidencias para "${query}".
-                                </div>`;
+                            dropdown.innerHTML = `<div class="p-4 text-sm text-gray-500 text-center font-medium">No hay más coincidencias en la base de datos para "${query}".</div>`;
                         } else {
                             clients.forEach(client => {
                                 const doc = client.document || client.cedula || 'Sin cédula';
                                 const phone = client.phone || 'Sin tel.';
-                                const contract = client.contracts && client.contracts.length > 0 ? client.contracts[0] : null;
-                                const extraInfo = contract ? ` | IP: ${contract.ip_address || 'N/A'} | Serial: ${contract.device_serial || 'N/A'}` : '';
 
                                 const item = document.createElement('a');
                                 item.href = `/clients/${client.id}`;
-                                item.className = 'block p-3 hover:bg-blue-50 transition cursor-pointer';
+                                item.className = 'block p-3 hover:bg-blue-50 transition cursor-pointer border-b border-gray-50 last:border-0';
                                 item.innerHTML = `
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <p class="text-sm font-bold text-gray-900">${client.name}</p>
-                                            <p class="text-xs text-gray-500">📄 ${doc} | 📞 ${phone} ${extraInfo}</p>
+                                            <p class="text-xs text-gray-500">📄 ${doc} | 📞 ${phone}</p>
                                         </div>
-                                        <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-1 rounded-full">Ver cliente →</span>
+                                        <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-1 rounded-full">Ver ficha →</span>
                                     </div>
                                 `;
                                 dropdown.appendChild(item);
@@ -149,7 +177,7 @@
             }, 300);
         });
 
-        // Ocultar menú si se hace clic fuera del buscador
+        // Ocultar dropdown al hacer clic en otro lado de la pantalla
         document.addEventListener('click', function(e) {
             if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.add('hidden');
