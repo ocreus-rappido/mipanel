@@ -8,53 +8,77 @@ use Illuminate\Http\Request;
 
 class ContractController extends Controller
 {
+    /**
+     * Muestra el listado de contratos y sus métricas principales.
+     */
     public function index()
     {
-        $contracts = Contract::with('client')->latest()->paginate(20);
-        return view('contracts.index', compact('contracts'));
+        $contracts = Contract::with('client')->latest()->get();
+
+        $totalContracts = Contract::count();
+        $activeContracts = Contract::whereIn('status', ['active', 'habilitado', 'Activo'])->count();
+
+        return view('contracts.index', compact('contracts', 'totalContracts', 'activeContracts'));
     }
 
+    /**
+     * Muestra el formulario para crear un nuevo contrato.
+     */
     public function create()
     {
         $clients = Client::orderBy('name', 'asc')->get();
         return view('contracts.create', compact('clients'));
     }
 
+    /**
+     * Almacena un nuevo contrato en la base de datos.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'plan' => 'required|string',
-            'price' => 'required|numeric',
-            'status' => 'nullable|string',
-            'wifi_password' => 'nullable|string',
+            'client_id'     => 'required|exists:clients,id',
+            'plan_name'     => 'required|string|max:255',
+            'price'         => 'required|numeric|min:0',
+            'wifi_password' => 'nullable|string|max:255',
+            'billing_zone'  => 'nullable|string|in:darien,panama',
+            'status'        => 'required|string',
         ]);
 
         Contract::create($validated);
 
-        return redirect()->route('contracts.index')->with('success', '¡Contrato creado con éxito!');
+        return redirect()->route('contracts.index')->with('success', '🎉 ¡Contrato creado con éxito!');
     }
 
+    /**
+     * Muestra la vista detallada de un contrato.
+     */
     public function show(Contract $contract)
     {
-        // Al tocar la lupa, redirige a la ficha completa del cliente
-        return redirect()->route('clients.show', $contract->client_id);
+        $contract->load(['client', 'invoices']);
+        return view('contracts.show', compact('contract'));
     }
 
+    /**
+     * Muestra el formulario de edición de un contrato.
+     */
     public function edit(Contract $contract)
     {
         $clients = Client::orderBy('name', 'asc')->get();
         return view('contracts.edit', compact('contract', 'clients'));
     }
 
+    /**
+     * Actualiza la información del contrato.
+     */
     public function update(Request $request, Contract $contract)
     {
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'plan' => 'required|string',
-            'price' => 'required|numeric',
-            'status' => 'nullable|string',
-            'wifi_password' => 'nullable|string',
+            'client_id'     => 'sometimes|exists:clients,id',
+            'plan_name'     => 'nullable|string|max:255',
+            'price'         => 'nullable|numeric|min:0',
+            'wifi_password' => 'nullable|string|max:255',
+            'billing_zone'  => 'nullable|string|in:darien,panama',
+            'status'        => 'nullable|string',
         ]);
 
         $contract->update($validated);
@@ -62,9 +86,12 @@ class ContractController extends Controller
         return redirect()->route('contracts.index')->with('success', '¡Contrato actualizado con éxito!');
     }
 
+    /**
+     * Elimina un contrato del sistema.
+     */
     public function destroy(Contract $contract)
     {
         $contract->delete();
-        return redirect()->route('contracts.index')->with('success', '¡Contrato eliminado con éxito!');
+        return redirect()->route('contracts.index')->with('success', 'Contrato eliminado correctamente.');
     }
 }
