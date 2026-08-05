@@ -1,28 +1,16 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('contracts', function (Blueprint $table) {
-            $table->string('wifi_password')->nullable()->after('billing_status');
-        });
+        // La columna ya existe en Railway, no se ejecuta ningún comando SQL.
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('contracts', function (Blueprint $table) {
-            $table->dropColumn('wifi_password');
-        });
+        //
     }
 };
