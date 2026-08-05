@@ -20,7 +20,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Clientes
+    // Clientes (La búsqueda, exportar e importar van ANTES del resource)
+    Route::get('/clients/search', [ClientController::class, 'search'])->name('clients.search');
     Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
     Route::resource('clients', ClientController::class);
